@@ -2,9 +2,11 @@ import os
 import pandas as pd
 from Bio import SeqIO
 
+# -------- INPUT --------
 genbank_folder = "output/annotations"
 output_path = "output/gene_coordinates_per_genome.xlsx"
 
+# ---------- WRITE MULTIPLE SHEETS ----------
 with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
 
     for gb_file in os.listdir(genbank_folder):
