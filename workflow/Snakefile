@@ -1,0 +1,608 @@
+# =========================================================
+# workflow/Snakefile
+# COMPLETE CTAG GENOME ANALYSIS PIPELINE
+# =========================================================
+
+# =========================================================
+# FINAL TARGET
+# =========================================================
+
+rule all:
+
+    input:
+
+        # =================================================
+        # CORE OUTPUTS
+        # =================================================
+
+        "output/genome_qc_results.csv",
+        "output/gene_coordinates_per_genome.xlsx",
+        directory("data/processed/coding_fasta"),
+        "output/last4_nt.xlsx",
+        directory("data/processed/genomes_singleline"),
+        "output/final_tetra_analysis.xlsx",
+        "output/final_tri_analysis.xlsx",
+        "output/CTAG_permutation_final.xlsx",
+        "output/final_analysis.xlsx",
+
+        # =================================================
+        # STATISTICS
+        # =================================================
+
+        "results/tables/statistical_summary.csv",
+
+        # =================================================
+        # VISUALIZATION
+        # =================================================
+
+        "results/figures/Fig3_seaborn.png",
+        "results/figures/Fig4_seaborn.png",
+        "results/figures/Fig5_seaborn.png",
+
+        # =================================================
+        # HEATMAP / PCA / CLUSTERING
+        # =================================================
+
+        "results/figures/tetra_heatmap.png",
+        "results/figures/pca_clustering.png",
+        "results/figures/genome_dendrogram.png",
+
+        # =================================================
+        # PUBLICATION FIGURES
+        # =================================================
+
+        directory("results/publication_figures"),
+
+        # =================================================
+        # CTAG LOCAL CLUSTERING
+        # =================================================
+
+        directory("results/ctag_local_clustering"),
+
+        # =================================================
+        # BASE HETEROGENEITY
+        # =================================================
+
+        "results/base_heterogeneity/base_heterogeneity_summary.csv",
+
+        # =================================================
+        # GC CORRELATION
+        # =================================================
+
+        "results/gc_correlation/ctag_gc_correlation.csv",
+
+        # =================================================
+        # ENTROPY ANALYSIS
+        # =================================================
+
+        "results/entropy/genome_entropy_summary.csv",
+
+        # =================================================
+        # PHYLOGENETIC ANALYSIS
+        # =================================================
+
+        "results/phylogenetic/ctag_phylogenetic_matrix.csv",
+
+        # =================================================
+        # HOTSPOT ANNOTATION
+        # =================================================
+
+        "results/hotspots/ctag_hotspot_annotations.csv",
+
+        # =================================================
+        # GENOME BROWSER TRACKS
+        # =================================================
+
+        directory("results/browser_tracks"),
+
+        # =================================================
+        # FUNCTIONAL ENRICHMENT
+        # =================================================
+
+        "results/enrichment/ctag_functional_enrichment.csv",
+
+        # =================================================
+        # COMPARATIVE SUMMARY
+        # =================================================
+
+        "results/comparative/ctag_comparative_summary.csv",
+
+        # =================================================
+        # FINAL REPORT
+        # =================================================
+
+        "results/final_report/CTAG_final_report.pdf"
+
+
+# =========================================================
+# 01 DOWNLOAD GENOMES
+# =========================================================
+
+rule download_data:
+
+    input:
+        "requirements/bacterial_genome.csv"
+
+    output:
+        directory("data/raw/genomes"),
+        directory("data/raw/annotations")
+
+    shell:
+        """
+        python scripts/01_download_data.py
+        """
+
+
+# =========================================================
+# 02 GENOME QC
+# =========================================================
+
+rule genome_qc:
+
+    input:
+        directory("data/raw/genomes")
+
+    output:
+        "output/genome_qc_results.csv"
+
+    shell:
+        """
+        python scripts/02_genome_qc.py
+        """
+
+
+# =========================================================
+# 03 GENE COORDINATES
+# =========================================================
+
+rule gene_coordinates:
+
+    input:
+        directory("data/raw/annotations")
+
+    output:
+        "output/gene_coordinates_per_genome.xlsx"
+
+    shell:
+        """
+        python scripts/03_gene_coordinates.py
+        """
+
+
+# =========================================================
+# 04 EXTRACT GENES
+# =========================================================
+
+rule extract_genes:
+
+    input:
+        genomes = directory("data/raw/genomes"),
+        annotations = directory("data/raw/annotations")
+
+    output:
+        directory("data/processed/genes")
+
+    shell:
+        """
+        python scripts/04_extract_genes_from_genbank.py
+        """
+
+
+# =========================================================
+# 05 COMBINE GENE SEQUENCES
+# =========================================================
+
+rule combine_gene_sequences:
+
+    input:
+        directory("data/processed/genes")
+
+    output:
+        directory("data/processed/coding_fasta")
+
+    shell:
+        """
+        python scripts/05_combine_gene_seq.py
+        """
+
+
+# =========================================================
+# 06 TERMINATION SITE EXTRACTION
+# =========================================================
+
+rule termination_sites:
+
+    input:
+        directory("data/processed/genes")
+
+    output:
+        "output/last4_nt.xlsx"
+
+    shell:
+        """
+        python scripts/06_extract_termination_sites.py
+        """
+
+# =========================================================
+# 07 CONCAT FASTA SEQ
+# =========================================================
+
+rule contextual_analysis:
+
+    input:
+        directory("data/raw/genomes")
+
+    output:
+        directory("data/processed/genomes_singleline")
+
+    shell:
+        """
+        python scripts/07_concat_fasta_seq.py
+        """
+
+# =========================================================
+# 08 TETRANUCLEOTIDE ANALYSIS
+# =========================================================
+
+rule tetra_analysis:
+
+    input:
+        genomes = directory("data/processed/genomes_singleline"),
+        genes = directory("data/processed/genes"),
+        term = "output/last4_nt.xlsx"
+
+    output:
+        "output/final_tetra_analysis.xlsx"
+
+    shell:
+        """
+        python scripts/08_calculate_obs_exp_tetra.py
+        """
+
+
+# =========================================================
+# 09 TRINUCLEOTIDE ANALYSIS
+# =========================================================
+
+rule tri_analysis:
+
+    input:
+        genomes = directory("data/processed/genomes_singleline"),
+        genes = directory("data/processed/genes"),
+        term = "output/last4_nt.xlsx"
+
+    output:
+        "output/final_tri_analysis.xlsx"
+
+    shell:
+        """
+        python scripts/09_calculate_obs_exp_tri.py
+        """
+
+
+# =========================================================
+# 10 CTAG PERMUTATION ANALYSIS
+# =========================================================
+
+rule permutation_analysis:
+
+    input:
+        "output/final_tetra_analysis.xlsx"
+
+    output:
+        "output/CTAG_permutation_final.xlsx"
+
+    shell:
+        """
+        python scripts/10_extract_permutation_ctag.py
+        """
+
+
+# =========================================================
+# 11 FINAL TERMINATION ANALYSIS
+# =========================================================
+
+rule final_analysis:
+
+    input:
+        tri = "output/final_tri_analysis.xlsx",
+        tetra = "output/final_tetra_analysis.xlsx"
+
+    output:
+        "output/final_analysis.xlsx"
+
+    shell:
+        """
+        python scripts/11_ctag_termination_analysis_pipeline.py
+        """
+
+
+# =========================================================
+# 12 VISUALIZATION
+# =========================================================
+
+rule visualization:
+
+    input:
+        "output/final_analysis.xlsx"
+
+    output:
+        "results/figures/Fig3_seaborn.png",
+        "results/figures/Fig4_seaborn.png",
+        "results/figures/Fig5_seaborn.png"
+
+    shell:
+        """
+        python scripts/12_visualization.py
+        """
+
+
+# =========================================================
+# 13 STATISTICAL ANALYSIS
+# =========================================================
+
+rule statistical_analysis:
+
+    input:
+        "output/final_tetra_analysis.xlsx"
+
+    output:
+        "results/tables/statistical_summary.csv"
+
+    shell:
+        """
+        python scripts/13_statistical_analysis.py
+        """
+
+
+# =========================================================
+# 14 HEATMAP ANALYSIS
+# =========================================================
+
+rule heatmap_analysis:
+
+    input:
+        "output/final_tetra_analysis.xlsx"
+
+    output:
+        "results/figures/tetra_heatmap.png"
+
+    shell:
+        """
+        python scripts/14_heatmap_analysis.py
+        """
+
+
+# =========================================================
+# 15 PCA ANALYSIS
+# =========================================================
+
+rule pca_analysis:
+
+    input:
+        "output/final_tetra_analysis.xlsx"
+
+    output:
+        "results/figures/pca_clustering.png"
+
+    shell:
+        """
+        python scripts/15_pca_analysis.py
+        """
+
+
+# =========================================================
+# 16 HIERARCHICAL CLUSTERING
+# =========================================================
+
+rule genome_clustering:
+
+    input:
+        "output/final_tetra_analysis.xlsx"
+
+    output:
+        "results/figures/genome_dendrogram.png"
+
+    shell:
+        """
+        python scripts/16_genome_clustering.py
+        """
+
+
+# =========================================================
+# 17 PUBLICATION VISUALIZATION
+# =========================================================
+
+rule publication_visualization:
+
+    input:
+        "output/final_analysis.xlsx"
+
+    output:
+        directory("results/publication_figures")
+
+    shell:
+        """
+        python scripts/17_ctag_publication_visualization.py
+        """
+
+
+# =========================================================
+# 18 CTAG LOCAL CLUSTERING
+# =========================================================
+
+rule ctag_local_clustering:
+
+    input:
+        directory("data/processed/genomes_singleline")
+
+    output:
+        directory("results/ctag_local_clustering")
+
+    shell:
+        """
+        python scripts/18_ctag_local_clustering_analysis.py
+        """
+
+
+# =========================================================
+# 19 BASE HETEROGENEITY ANALYSIS
+# =========================================================
+
+rule base_heterogeneity:
+
+    input:
+        directory("data/processed/genomes_singleline")
+
+    output:
+        "results/base_heterogeneity/base_heterogeneity_summary.csv"
+
+    shell:
+        """
+        python scripts/19_base_heterogeneity_analysis.py
+        """
+
+
+# =========================================================
+# 20 CTAG vs GC CORRELATION
+# =========================================================
+
+rule gc_correlation:
+
+    input:
+        "output/final_tetra_analysis.xlsx"
+
+    output:
+        "results/gc_correlation/ctag_gc_correlation.csv"
+
+    shell:
+        """
+        python scripts/20_ctag_vs_gc_correlation.py
+        """
+
+
+# =========================================================
+# 21 GENOME ENTROPY ANALYSIS
+# =========================================================
+
+rule entropy_analysis:
+
+    input:
+        directory("data/processed/genomes_singleline")
+
+    output:
+        "results/entropy/genome_entropy_summary.csv"
+
+    shell:
+        """
+        python scripts/21_genome_entropy_analysis.py
+        """
+
+
+# =========================================================
+# 22 PHYLOGENETIC CTAG ANALYSIS
+# =========================================================
+
+rule phylogenetic_analysis:
+
+    input:
+        "output/final_tetra_analysis.xlsx"
+
+    output:
+        "results/phylogenetic/ctag_phylogenetic_matrix.csv"
+
+    shell:
+        """
+        python scripts/22_phylogenetic_ctag_analysis.py
+        """
+
+
+# =========================================================
+# 23 HOTSPOT ANNOTATION
+# =========================================================
+
+rule hotspot_annotation:
+
+    input:
+        directory("results/ctag_local_clustering")
+
+    output:
+        "results/hotspots/ctag_hotspot_annotations.csv"
+
+    shell:
+        """
+        python scripts/23_ctag_hotspot_annotation.py
+        """
+
+
+# =========================================================
+# 24 GENOME BROWSER TRACKS
+# =========================================================
+
+rule genome_browser_tracks:
+
+    input:
+        directory("results/ctag_local_clustering")
+
+    output:
+        directory("results/browser_tracks")
+
+    shell:
+        """
+        python scripts/24_ctag_genome_browser_tracks.py
+        """
+
+
+# =========================================================
+# 25 FUNCTIONAL ENRICHMENT
+# =========================================================
+
+rule functional_enrichment:
+
+    input:
+        "results/hotspots/ctag_hotspot_annotations.csv"
+
+    output:
+        "results/enrichment/ctag_functional_enrichment.csv"
+
+    shell:
+        """
+        python scripts/25_ctag_hotspot_functional_enrichment.py
+        """
+
+
+# =========================================================
+# 26 COMPARATIVE SUMMARY
+# =========================================================
+
+rule comparative_summary:
+
+    input:
+        "output/final_tetra_analysis.xlsx"
+
+    output:
+        "results/comparative/ctag_comparative_summary.csv"
+
+    shell:
+        """
+        python scripts/26_ctag_comparative_summary.py
+        """
+
+
+# =========================================================
+# 27 FINAL REPORT
+# =========================================================
+
+rule final_report:
+
+    input:
+        comparative = "results/comparative/ctag_comparative_summary.csv",
+        stats = "results/tables/statistical_summary.csv"
+
+    output:
+        "results/final_report/CTAG_final_report.pdf"
+
+    shell:
+        """
+        python scripts/27_generate_final_report.py
+        """

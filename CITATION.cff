@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: "CTAG Motif Genome Analysis"
+message: "If you use this project, please cite it."
+type: software
+
+authors:
+    given-names: "Sonia"
+
+keywords:
+  - bioinformatics
+  - genomics
+  - bacterial-genomics
+  - motif-analysis
+  - tetranucleotide
+  - CTAG
+  - computational-biology
+
+license: MIT
+
+repository-code: "https://github.com/sonia-genomics/CTAG-motif-genome-analysis"

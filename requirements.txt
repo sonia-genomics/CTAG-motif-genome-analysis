@@ -1,0 +1,9 @@
+biopython
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+scipy
+openpyxl
+ete3
