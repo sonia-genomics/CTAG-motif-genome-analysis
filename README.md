@@ -305,7 +305,9 @@ Example:
 | id | Organism | family | accession |genome_size |
 
 |---|---|---|---|---|
+
 | 1 | Escherichia coli str. K-12 | Enterobacteriaceae | NC_000913.3 | 4641652 |
+
 | 2 | Anabaena cylindrica PCC 7122 | Nostocaceae | NC_019771.1 | 6395836 |
 
 
